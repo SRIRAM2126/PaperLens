@@ -8,5 +8,12 @@ tempCodeRunnerFile.py
 
 # Large model files
 models/
+models_backup/
 
 data/
+data_backup/
+
+data2.json
+*.db
+*.pkl
+*.csv

@@ -9,6 +9,7 @@ import os
 import pickle
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
+from huggingface_hub import hf_hub_download
 
 app = FastAPI()
 
@@ -18,10 +19,37 @@ app = FastAPI()
 base_dir         = os.path.dirname(os.path.abspath(__file__))
 models_dir = os.path.join(base_dir, "models")
 data_dir = os.path.join(base_dir, "data")
+os.makedirs(models_dir, exist_ok=True)
+os.makedirs(data_dir, exist_ok=True)
+
 db_path = os.path.join(data_dir, "papers_warehouse.db")
 embeddings_path = os.path.join(models_dir, "bert_embeddings.pkl")
 df_path = os.path.join(models_dir, "papers_df.pkl")
 
+
+
+
+REPO_ID = "v-sriram/paperlens-model-files"
+
+def download_if_missing(local_path, filename):
+    if not os.path.exists(local_path):
+        print(f"Downloading {filename}...")
+
+        downloaded = hf_hub_download(
+            repo_id=REPO_ID,
+            filename=filename,
+            repo_type="dataset"
+        )
+
+        import shutil
+        shutil.copy(downloaded, local_path)
+
+        print(f"{filename} downloaded successfully!")
+
+
+download_if_missing(db_path, "papers_warehouse.db")
+download_if_missing(df_path, "papers_df.pkl")
+download_if_missing(embeddings_path, "bert_embeddings.pkl")
 # ─────────────────────────────────────────
 # STEP 1 — Load DataFrame
 # First time → loads from DB → saves pkl
