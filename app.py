@@ -8,8 +8,8 @@ import re
 import os
 import pickle
 from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
 from huggingface_hub import hf_hub_download
+import faiss
 
 app = FastAPI()
 
@@ -23,10 +23,8 @@ os.makedirs(models_dir, exist_ok=True)
 os.makedirs(data_dir, exist_ok=True)
 
 db_path = os.path.join(data_dir, "papers_warehouse.db")
-embeddings_path = os.path.join(models_dir, "bert_embeddings.pkl")
+faiss_path = os.path.join(models_dir, "paper_index.faiss")
 df_path = os.path.join(models_dir, "papers_df.pkl")
-
-
 
 
 REPO_ID = "v-sriram/paperlens-model-files"
@@ -47,60 +45,31 @@ def download_if_missing(local_path, filename):
         print(f"{filename} downloaded successfully!")
 
 
-download_if_missing(db_path, "papers_warehouse.db")
+
 download_if_missing(df_path, "papers_df.pkl")
-download_if_missing(embeddings_path, "bert_embeddings.pkl")
+download_if_missing(faiss_path, "paper_index.faiss")
 # ─────────────────────────────────────────
 # STEP 1 — Load DataFrame
 # First time → loads from DB → saves pkl
 # Next time  → loads from pkl (5 secs!)
-# ─────────────────────────────────────────
-if os.path.exists(df_path):
-    print("📦 Loading saved DataFrame...")
-    with open(df_path, "rb") as f:
-        df = pickle.load(f)
-    print(f"DataFrame loaded! {len(df)} papers!")
-else:
-    print("📦 Loading from warehouse DB...")
-    conn = sqlite3.connect(db_path)
-    df   = pd.read_sql("SELECT * FROM papers", conn)
-    conn.close()
-    with open(df_path, "wb") as f:
-        pickle.dump(df, f)
-    print(f"DataFrame saved → {df_path}")
-    print(f"{len(df)} papers loaded!")
+# ────────────────────────────────────────
+print("Loading DataFrame...")
+with open(df_path, "rb") as f:
+    df = pickle.load(f)
+print(f"Loaded {len(df)} papers")
+print("Loading FAISS index...")
+index = faiss.read_index(faiss_path)
+print("FAISS index loaded!")
+print(f"Total vectors: {index.ntotal}")
 
-# ─────────────────────────────────────────
-# STEP 2 — Load BERT Model
-# ─────────────────────────────────────────
-print("🤖 Loading BERT model...")
+
+
+
+print("Loading BERT model...")
+
 model = SentenceTransformer("all-MiniLM-L6-v2")
-print("✅ BERT model ready!")
 
-# ─────────────────────────────────────────
-# STEP 3 — Load OR Build Embeddings
-# First time → builds on Kaggle GPU → saves pkl
-# Next time  → loads pkl (30 secs!)
-# ─────────────────────────────────────────
-if os.path.exists(embeddings_path):
-    print("📦 Loading saved BERT embeddings...")
-    with open(embeddings_path, "rb") as f:
-        embeddings = pickle.load(f)
-    print(f"Embeddings loaded! Shape: {embeddings.shape}")
-else:
-    print("Building BERT embeddings...")
-    print("First time only — takes 5-10 mins on GPU!")
-    embeddings = model.encode(
-        df["clean_text"].fillna("").tolist(),
-        batch_size=256,
-        show_progress_bar=True,
-        convert_to_numpy=True
-    )
-    with open(embeddings_path, "wb") as f:
-        pickle.dump(embeddings, f)
-    print(f"Embeddings built + saved → {embeddings_path}")
-
-print(f"🚀 Server ready! {len(df)} papers indexed!")
+print("BERT model loaded!")
 # ─────────────────────────────────────────
 # QUERY CLEANING
 # Same cleaning as preprocessing.py!
@@ -152,46 +121,51 @@ def recommend(req: QueryRequest):
     query = req.query.strip()
     if not query:
         return []
-
     # Clean query same way as preprocessing!
     cleaned_query = clean_query(query)
     print(f"Original : {query}")
     print(f"Cleaned  : {cleaned_query}")
-
     if not cleaned_query:
         return []
-
     # Encode with BERT
     query_embedding = model.encode(
         [cleaned_query],
         convert_to_numpy=True
     )
-
     # Cosine similarity against all embeddings
-    scores      = cosine_similarity(
-                    query_embedding, 
-                    embeddings
-                  ).flatten()
-    top_indices = scores.argsort()[::-1][:10]
+    query_embedding = query_embedding.astype("float32")
 
+    faiss.normalize_L2(query_embedding)
+
+    scores, indices = index.search(query_embedding, 10)
+
+    top_indices = indices[0]
+    top_scores = scores[0]
+
+    
     results = []
-    for idx in top_indices:
-        row   = df.iloc[idx]
-        score = float(scores[idx])
-        if score < 0.01:
+
+    for idx, score in zip(top_indices, top_scores):
+
+        if idx == -1:
             continue
+            
+        if score<0.2:
+            continue
+        row = df.iloc[idx]
+
         results.append({
-            "title":           str(row.get("title",           "N/A")),
-            "authors":         str(row.get("authors",         "N/A")),
-            "category":        str(row.get("category",        "N/A")),
-            "primary_subject": str(row.get("primary_subject", "N/A")),
-            "subjects":        str(row.get("subjects",        "N/A")),
-            "date":            str(row.get("date",            "N/A")),
-            "description":     str(row.get("description",     "")),
-            "link":            clean_link(row.get("link",           "")),
-            "link_of_paper":   clean_link(row.get("link_of_paper",  "")),
-            "link_of_pdf":     clean_link(row.get("link_of_pdf",    "")),
-            "score":           round(score, 4)
+            "title": str(row.get("title","N/A")),
+            "authors": str(row.get("authors","N/A")),
+            "category": str(row.get("category","N/A")),
+            "primary_subject": str(row.get("primary_subject","N/A")),
+            "subjects": str(row.get("subjects","N/A")),
+            "date": str(row.get("date","N/A")),
+            "description": str(row.get("description","")),
+            "link": clean_link(row.get("link","")),
+            "link_of_paper": clean_link(row.get("link_of_paper","")),
+            "link_of_pdf": clean_link(row.get("link_of_pdf","")),
+            "score": round(float(score),4)
         })
     return results
 

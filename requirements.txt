@@ -6,4 +6,4 @@ scikit-learn
 pydantic
 sentence-transformers
 huggingface_hub
-jinja2
+faiss-cpu
