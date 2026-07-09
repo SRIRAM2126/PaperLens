@@ -175,7 +175,11 @@
 
     .search-inner button:hover { background: var(--accent); }
     .search-inner button:active { transform: scale(0.98); }
-
+    .search-inner button:disabled{
+    background:#808080;
+    cursor:not-allowed;
+    opacity:.8;}
+    
     /* SUGGESTED TAGS */
     .suggestions {
       display: flex;
@@ -308,7 +312,11 @@
     .card:last-child { border-radius: 0 0 4px 4px; }
     .card:only-child { border-radius: 4px; border-top: 1px solid var(--border); }
 
-    .card:hover { background: white; }
+    .card:hover {transform:translateY(-6px);
+
+    box-shadow:0 18px 35px rgba(0,0,0,.08);
+
+    background:white;}
 
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(12px); }
@@ -557,17 +565,26 @@
           onkeydown="if(event.key==='Enter') search()"
           autocomplete="off"
         />
-        <button onclick="search()">Search</button>
+        <button id="searchBtn" onclick="search()">Search</button>
       </div>
 
       <!-- SUGGESTED TOPICS -->
       <div class="suggestions">
-        <span class="tag-suggest" onclick="quickSearch('machine learning')">machine learning</span>
-        <span class="tag-suggest" onclick="quickSearch('deep learning')">deep learning</span>
-        <span class="tag-suggest" onclick="quickSearch('computer vision')">computer vision</span>
-        <span class="tag-suggest" onclick="quickSearch('natural language processing')">NLP</span>
-        <span class="tag-suggest" onclick="quickSearch('reinforcement learning')">reinforcement learning</span>
-        <span class="tag-suggest" onclick="quickSearch('graph neural network')">graph neural network</span>
+        <span class="tag-suggest" onclick="quickSearch('machine learning')">Machine Learning</span>
+
+        <span class="tag-suggest" onclick="quickSearch('deep learning')">Deep Learning</span>
+
+        <span class="tag-suggest" onclick="quickSearch('computer vision')">Computer Vision</span>
+
+        <span class="tag-suggest" onclick="quickSearch('large language models')">LLMs</span>
+
+        <span class="tag-suggest" onclick="quickSearch('ai agents')">AI Agents</span>
+
+        <span class="tag-suggest" onclick="quickSearch('graph neural networks')">Graph Neural Networks</span>
+
+        <span class="tag-suggest" onclick="quickSearch('diffusion models')">Diffusion Models</span>
+
+        <span class="tag-suggest" onclick="quickSearch('medical ai')">Medical AI</span>
       </div>
     </div>
   </div>
@@ -603,6 +620,12 @@
 
     async function search() {
       const query = document.getElementById('queryInput').value.trim();
+      const startTime = performance.now();
+
+      const btn = document.getElementById("searchBtn");
+
+      btn.disabled = true;
+      btn.innerHTML = "Searching...";
       if (!query) return;
 
       // Reset
@@ -620,7 +643,12 @@
         });
 
         const papers = await res.json();
+        const endTime = performance.now();
+        const elapsed=((endTime-startTime)/1000).toFixed(2);
         document.getElementById('loader').style.display = 'none';
+        btn.disabled=false;
+
+btn.    innerHTML="Search";
 
         if (!papers.length) {
           document.getElementById('dividerText').textContent = 'No results found';
@@ -633,8 +661,7 @@
         }
 
         document.getElementById('dividerText').textContent = `${papers.length} papers found`;
-        document.getElementById('statusText').textContent =
-          `${papers.length} results for "${query}" — ranked by relevance`;
+        document.getElementById('statusText').textContent = `${papers.length} papers found in ${elapsed}s`;
 
         const container = document.getElementById('results');
 
@@ -646,7 +673,12 @@
 
           const delay = i * 60;
           const authors = p.authors.replace(/[\[\]']/g, '').slice(0, 80);
-          const desc = p.description || '';
+          const desc=
+          (p.description||"").length>350
+          ?
+          (p.description||"").substring(0,350)+"..."
+          :
+          (p.description||"");
           const subjects = p.subjects
             ? p.subjects.replace(/[\[\]']/g, '').split(',').map(s => s.trim()).join(', ')
             : '';
@@ -687,6 +719,7 @@
       }
     }
   </script>
-
+<footer>Built with ❤️ by Vadthyavath Sriram<br><br>297,357 Research Papers•
+BERT•FAISS•FastAPI</footer>
 </body>
 </html>

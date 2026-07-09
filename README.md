@@ -1,21 +1,25 @@
 # 📚 PaperLens – Research Paper Recommendation System using BERT
+🚀 **Live Demo:** https://v-sriram-paperlens.hf.space/
 
-PaperLens is an AI-powered research paper recommendation system that uses **BERT sentence embeddings** and **cosine similarity** to recommend semantically relevant research papers from the **arXiv dataset**.
+PaperLens is an AI-powered research paper recommendation system that uses **BERT sentence embeddings** and **FAISS vector search** to retrieve semantically relevant research papers from the **arXiv dataset**.
 
-Unlike traditional keyword search, PaperLens understands the meaning of a query and recommends papers based on semantic similarity.
+Unlike traditional keyword search, PaperLens understands the meaning of a query and efficiently retrieves the most relevant papers using semantic vector search.
+
 
 ---
 
 # 🚀 Features
 
-- 🔍 Semantic search using BERT
+- 🔍 Semantic search using BERT embeddings
+- ⚡ High-speed retrieval using FAISS vector search
 - 🤖 Sentence Transformers (all-MiniLM-L6-v2)
-- 📄 Research paper recommendation
-- ⚡ FastAPI backend
-- 🎨 Responsive HTML frontend
+- 📄 Top-10 research paper recommendations
+- 📚 Search across **297,357** arXiv research papers
+- ⚡ FastAPI REST API
+- 🎨 Responsive HTML/CSS/JavaScript frontend
 - 💾 SQLite database
-- 📦 Precomputed BERT embeddings for fast inference
-- 📚 Dataset of approximately **297,357 arXiv research papers**
+- 🌐 Public deployment on Hugging Face Spaces
+- Dataset containing **297,357 arXiv research papers**
 
 ---
 
@@ -28,7 +32,7 @@ Unlike traditional keyword search, PaperLens understands the meaning of a query 
 ## Machine Learning
 - Sentence Transformers
 - BERT (all-MiniLM-L6-v2)
-- Scikit-learn
+- FAISS
 - NumPy
 - Pandas
 
@@ -57,7 +61,7 @@ PaperLens/
 │   └── index.html
 │
 ├── models/
-│   ├── bert_embeddings.pkl
+│   ├── paper_index.faiss
 │   └── papers_df.pkl
 │
 ├── data/
@@ -73,10 +77,11 @@ PaperLens/
 # ⚙️ How It Works
 
 1. User enters a research topic.
-2. Query is converted into a BERT embedding.
-3. Cosine similarity is computed against all paper embeddings.
-4. Top matching papers are retrieved.
-5. Recommended papers are displayed with titles, abstracts, and links.
+2. Query is cleaned and encoded using Sentence Transformers.
+3. The embedding is normalized.
+4. FAISS performs a nearest-neighbor vector search.
+5. Top-10 most relevant papers are retrieved.
+6. Results are displayed with metadata and links.
 
 ---
 
@@ -92,7 +97,7 @@ Sentence Transformer (BERT)
 Query Embedding
       │
       ▼
-Cosine Similarity
+FAISS Vector Search
       │
       ▼
 Top-K Similar Papers
@@ -111,7 +116,7 @@ Web Interface
 Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/PaperLens.git
+git clone https://github.com/SRIRAM2126/PaperLens.git
 ```
 
 Move into the project
@@ -139,49 +144,83 @@ http://127.0.0.1:8000
 ```
 
 ---
+# 🌐 Live Demo
+
+https://v-sriram-paperlens.hf.space/
+
+Hosted using Hugging Face Spaces.
 
 # 📈 Dataset
 
 - Source: arXiv
-- Total Papers: ~297,357
-- Database: SQLite
-- Embeddings: BERT Sentence Embeddings
+- Total Papers: **297,357**
+- Storage: SQLite
+- Search Index: FAISS
+- Embedding Model: all-MiniLM-L6-v2
 
 ---
 
 # 📊 Machine Learning Model
 
-Model Used:
+### Embedding Model
 
-```
+```text
 sentence-transformers/all-MiniLM-L6-v2
 ```
 
-Similarity Metric:
+### Vector Search Engine
 
+```text
+FAISS (Facebook AI Similarity Search)
 ```
-Cosine Similarity
+
+### Similarity Metric
+
+```text
+Cosine similarity over normalized embeddings using FAISS
 ```
 
 ---
 
 # 🎯 Future Improvements
 
-- PDF summarization
-- Hybrid recommendation system
-- Citation graph recommendations
-- User authentication
+- PDF summarization using LLMs
 - Personalized recommendations
-- Vector database integration (FAISS)
+- User authentication
+- Search filters
+- Research paper bookmarking
+- Citation graph visualization
+- Multi-model embedding support
 
 ---
+# ⚡ Performance
+
+- Dataset Size: 297,357 Papers
+- Embedding Dimension: 384
+- Search Engine: FAISS
+- Top Results Returned: 10
+- Deployment: Hugging Face Spaces
+
+# 📸 Screenshots
+
+## Home Page
+
+![Home Page](image.png)
+
+## Search Results
+
+![Search Result](image-2.png)
+
+## Mobile View
+
+![Mobile view](image-3.png)
 
 # 👨‍💻 Author
 
 **Vadthyavath Sriram**
 **Kartavya Gupta**
 
-B.Tech Student | AI & Machine Learning Enthusiast
+B.Tech Student | AI Engineer |  Machine Learning Enthusiast
 
 ---
 
